@@ -37,17 +37,6 @@ Komponen | Tujuan
 | Module DHT11 | 1 pcs |
 | Breadboard 400 points | 1 pcs |
 
-![material](https://user-images.githubusercontent.com/108582271/177007654-dc706edb-46cb-425e-a652-3f34982a3d64.jpg)
-Foto 1: 
-Komponen yang digunakan untuk proyek tersebut
-
-All components are shown in Figure 1. From left to right:
-* Breadboard
-* ESP32 DEVKIT V1 DOIT
-* Capacitive soil moisture sensor. With its wires beneath it
-* DHT11
-* Jumper wires
-
 # Computer Setup
 **Setting up the IDE:**
 
