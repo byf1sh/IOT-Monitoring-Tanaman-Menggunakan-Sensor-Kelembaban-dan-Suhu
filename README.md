@@ -64,38 +64,110 @@ Foto 3: node-red dashboard page
 # Kodingan 
 **Microcontroller 1 (Sensor Kelembaban Tanah):**
 Pada bagian ini kami akan membahas seputar kode yang kami gunakan pada perangkat IoT yang kami buat, pertama tama kami akan membahas library yang kami gunakan yang ter lampir pada foto 4 sebagai berikut
+```
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <DHT.h>    
+#include <Adafruit_Sensor.h>
+#include <RunningMedian.h>  // Library untuk smoothing nilai analog
 
-![Screenshot 2022-07-04 175535](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/foto%204.jpg?raw=true)
-Foto 4: Library yang kami gunakan
+// WiFi
+const char *ssid = "bian"; // Ganti dengan nama WiFi Anda
+const char *password = "12345678";  // Ganti dengan kata sandi WiFi Anda
+
+// MQTT Broker
+const char *mqtt_broker = "broker.emqx.io";
+const char *topic = "testtopic/tubes";
+const char *topic2 = "testtopic/moisture";
+const char *topic3 = "testtopic/pumpindex";
+const char *mqtt_username = "mqtt";
+const char *mqtt_password = "123";
+const int mqtt_port = 1883;
+```
 
 Kemudian kami juga menambahkan kode untuk koneksi ke wifi dan MQTT Broker, ketika device berusaha konek ke wifi kami akan menampilkan "Connecting to wifi.." pada terminal, dan "Connected to the wifi network" jika berhasil konek, sesaat setelah konek ke wifi kami akan langsung mengkonekan device ke mqtt broker dan melakukan delay(2000) ketika gagal melakukan koneksi ke mqttbroker.
-![Screenshot 2022-07-04 175535](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/foto%205%20asli.jpg?raw=true)
-Foto 5 : Wifi Connect & MQTT Connect
+```
+void setup() {
+ Serial.begin(115200);
 
+ // Inisialisasi pin relay
+ pinMode(relayPin, OUTPUT);
+ digitalWrite(relayPin, LOW);  // Inisialisasi relay dalam keadaan mati
+
+ WiFi.begin(ssid, password);
+ while (WiFi.status() != WL_CONNECTED) {
+     delay(500);
+     Serial.println("Connecting to WiFi..");
+ }
+ Serial.println("Connected to the WiFi network");
+
+ client.setServer(mqtt_broker, mqtt_port);
+ client.setCallback(callback);
+ while (!client.connected()) {
+     String client_id = "esp32-client-";
+     client_id += String(WiFi.macAddress());
+     Serial.printf("The client %s connects to the public mqtt broker\n", client_id.c_str());
+     if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
+         Serial.println("Public emqx mqtt broker connected");
+     } else {
+         Serial.print("failed with state ");
+         Serial.print(client.state());
+         delay(2000);
+     }
+ }
+ dht.begin();   
+ client.publish(topic, "Hi EMQX I'm esp ^^");
+ client.subscribe(topic);
+}
+```
 Gambar selanjutnya dibawah ini adalah fungsi utama dari kode yang bertujuan untuk mengukur data dari sensor, menampilkan nilai-nilai tersebut, serta mengirimkan data tersebut ke platform Node-red melalui MQTT Broker. Selain itu, kode ini dirancang untuk menangani berbagai pengecualian yang mungkin terjadi selama proses pengiriman, memastikan integritas dan kehandalan operasi
-![Screenshot 2022-07-04 174224](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/foto%205.jpg?raw=true)
-Foto 6: Kode untuk soil moisture sensor
+```
+void loop() {
+ client.loop();
 
-**Microcontroller 2 (Sensor Suhu Udara):**
+ int soilMoistureValue = analogRead(soilMoisturePin);
+ soilMoistureValues.add(soilMoistureValue);
+ float smoothedMoisture = soilMoistureValues.getMedian();
 
-Pada bagian awalan kode kami melakukan pemanggilan untuk library yang digunakan, beserta dengan ssid wifi dan password, kami juga menuliskan informasi seputar MQTT Broker dan topic-topic yang kami gunakan pada projek ini
-![Screenshot 2022-07-04 174313](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/suhu%20Foto%201.jpg?raw=true)
-Foto 7: library untuk sensor suhu
+ Serial.println("Soil Moisture: " + String(smoothedMoisture));
+ sprintf(str, "%.2f", smoothedMoisture);
+ client.publish(topic2, str);
 
-Selanjutnya kami melakukan deklarasi pin yang digunakan pada kasus ini kami menggunakan pin D2, kami juga mendeklarasikan tipe dari sensor yang kami gunakan yaitu DHT11, kami juga melakukan callback untuk memastikan message yang kita kirimkan sampai ke topic dengan payload yang sesuai
-![Screenshot 2022-07-04 174313](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/suhu%20Foto%202.jpg?raw=true)
-Foto 8: Deklarasi pin
+ // Kontrol Relay berdasarkan Kelembaban Tanah
+ const int moistureThreshold = 940;  // Ganti dengan ambang batas yang sesuai
+ if (smoothedMoisture < moistureThreshold) {
+   digitalWrite(relayPin, HIGH);  // Aktifkan relay untuk menyalakan mini pump
+   Serial.println("Mini Pump is OFF");
+   client.publish(topic3, "Mini Pump is OFF");
+ } else {
+   digitalWrite(relayPin, LOW);  // Matikan relay
+   Serial.println("Mini Pump is ON");
+   client.publish(topic3, "Mini Pump is ON");
+ }
 
-Kemudian kami melakukan koneksi dengan wifi dan MQTT Broker dengan melakukan perintah dibawah ini, perintah ini kurang lebih sama dengan perintah sebelumnya yang kami gunakan pada Moisture sensor kode
-![Screenshot 2022-07-04 174313](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/suhu%20Foto%203.jpg?raw=true)
-Foto 9: Wifi dan MQTT Broker konek
+  // Task scheduler untuk menyalakan pompa setiap jam 7 pagi selama 2 menit
+  unsigned long currentMillis = millis();
+  if (lastPumpStartTime == 0) {
+    lastPumpStartTime = currentMillis;  // Inisialisasi waktu pertama kali
+  }
 
-Code dibawah ini merupakan inti dari kode yang kami buat, kode dibawah digunakan untuk menangkap data yang dikirimkan oleh sensor DHT11, kami mengambil data dengan cara dht.temprature().getEvent(), kemudian data yang ditangkap akan langsung dikrimkan ke MQTT dengan syntax client.publish().
-![Screenshot 2022-07-04 174313](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/suhu%20Foto%204.jpg?raw=true)
-Foto 10: Kode Pembacaan suhu
+  // Hitung jam dalam millis (1 jam = 3600000 millis)
+  if ((currentMillis - lastPumpStartTime >= 7 * 3600000) && (currentMillis - lastPumpStartTime < 7 * 3600000 + 120000)) {
+    // Jika waktu saat ini adalah jam 7 pagi dan belum lewat 2 menit
+    digitalWrite(relayPin, HIGH);  // Nyalakan pompa
+  } else {
+    // Jika bukan jam 7 pagi, atau sudah lewat 2 menit
+    digitalWrite(relayPin, LOW);  // Matikan pompa
+    lastPumpStartTime = 0;  // Reset waktu untuk siklus berikutnya
+  }
+
+ delay(2000);
+}
+```
+
 
 # Transmisi Data / Konektivitas
-
 I decided to send data once every 15 minutes since the purpose of this project is to know when i need to water my plant and since the moisture in the soil does not change that fast then 15 seemed like a good time beetween each measuring. 
 
 Wifi was the wireless protocols used for this project because the micocontroller setup is in my home close to my router and do not need any protocol with longer range because of that. Wifi also has no recurring costs, low latency and less bandwidth restrictions so it seemed like to best options.
@@ -107,22 +179,18 @@ Dasbor pada platform Nodered dikonfigurasi dengan memanfaatkan tiga aliran data 
 
 Untuk air level dan suhu, pilihan jatuh pada penggunaan sebuah meteran (gauge) yang menampilkan persentase kelembapan pada saat pengukuran terakhir. Sementara itu, untuk tingkat kebasahan, sebuah bidang teks digunakan untuk menunjukkan nilai suhu saat pengukuran terakhir
 ![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Dashboard.jpg?raw=true)
-Foto 11: The dashboard page on nodered
+
 
 
 # Menyelesaikan Desain
 Setelah merakit komponen ini hasil yang bisa kami tampilkan.
 ![20220704_204437](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%201.jpg?raw=true)
-Foto 12: Menyempurnakan Projek
 
 ![20220704_204443](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%202.jpg?raw=true)
-Foto 13: Mini Pump
 
 ![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%203.jpg?raw=true)
-Foto 14: Soil Moisture Sensor
 
 ![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%204.jpg?raw=true)
-Foto 14: Projek Final
 
 **Kata Penutup**
 
