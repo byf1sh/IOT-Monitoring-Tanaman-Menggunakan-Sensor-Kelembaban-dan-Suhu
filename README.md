@@ -25,17 +25,17 @@ Komponen | Tujuan
 
 | Nama Komponen | Pcs | Harga|
 | ------ | ------ | ------ |
-| ESP12 Mini | 2 pcs |  
-| Relay | 1 pcs |  
-| Mini Water Pump | 1 pcs |
-| Battery Storage Case Holder |1 pcs |
-| USB power cable | 1 pcs |
-| Jumper wires | 10 pcs |
-| 0.5m Vinyl Tubing | 1 pcs |
-| Soil Moisture Detector | 1 pcs |
-| Jumper wires male to male | 12 pcs |
-| Module DHT11 | 1 pcs |
-| Breadboard 400 points | 1 pcs |
+| ESP12 Mini | 2 pcs |  Rp. 35.000
+| Relay | 1 pcs |  Rp. 5.000
+| Mini Water Pump | 1 pcs | Rp. 10.000
+| Battery Storage Case Holder |1 pcs | Rp. 20.000
+| USB power cable | 1 pcs | Rp. 5.000
+| Jumper wires | 10 pcs |  Rp. 10.000
+| 0.5m Vinyl Tubing | 1 pcs |  Rp. 12.000
+| Soil Moisture Detector | 1 pcs | Rp. 10.000
+| Jumper wires male to male | 12 pcs | Rp. 14.000
+| Module DHT11 | 1 pcs | Rp. 10.000
+| Breadboard 400 points | 1 pcs | Rp. 13.000
 
 # Computer Setup
 **Setting up the IDE:**
