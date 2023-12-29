@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <DHT.h>    
 #include <Adafruit_Sensor.h>
 #include <RunningMedian.h>  // Library untuk smoothing nilai analog
 
@@ -20,6 +21,11 @@ const int mqtt_port = 1883;
 // Sensor Kelembaban Tanah
 const int soilMoisturePin = A0;  // Pin analog kelembaban tanah
 RunningMedian soilMoistureValues = RunningMedian(10);  // Objek RunningMedian untuk menghaluskan nilai analog
+
+// Sensor DHT11
+#define DHTPIN D7            // Pin yang terhubung ke DHT11
+#define DHTTYPE DHT11        // Tipe sensor DHT (DHT11, DHT22, AM2302, dll.)
+DHT dht(DHTPIN, DHTTYPE);
 
 // Relay untuk Mini Pump
 const int relayPin = D6;  // Pin digital untuk mengontrol relay
@@ -68,10 +74,12 @@ void setup() {
          delay(2000);
      }
  }
-
+ dht.begin();   
  client.publish(topic, "Hi EMQX I'm esp ^^");
  client.subscribe(topic);
 }
+
+unsigned long lastPumpStartTime = 0;
 
 void loop() {
  client.loop();
@@ -95,6 +103,22 @@ void loop() {
    Serial.println("Mini Pump is ON");
    client.publish(topic3, "Mini Pump is ON");
  }
+
+  // Task scheduler untuk menyalakan pompa setiap jam 7 pagi selama 2 menit
+  unsigned long currentMillis = millis();
+  if (lastPumpStartTime == 0) {
+    lastPumpStartTime = currentMillis;  // Inisialisasi waktu pertama kali
+  }
+
+  // Hitung jam dalam millis (1 jam = 3600000 millis)
+  if ((currentMillis - lastPumpStartTime >= 7 * 3600000) && (currentMillis - lastPumpStartTime < 7 * 3600000 + 120000)) {
+    // Jika waktu saat ini adalah jam 7 pagi dan belum lewat 2 menit
+    digitalWrite(relayPin, HIGH);  // Nyalakan pompa
+  } else {
+    // Jika bukan jam 7 pagi, atau sudah lewat 2 menit
+    digitalWrite(relayPin, LOW);  // Matikan pompa
+    lastPumpStartTime = 0;  // Reset waktu untuk siklus berikutnya
+  }
 
  delay(2000);
 }
