@@ -63,109 +63,219 @@ Foto 3: node-red dashboard page
 
 # Kodingan 
 **Microcontroller 1 (Sensor Kelembaban Tanah):**
-Pada bagian ini kami akan membahas seputar kode yang kami gunakan pada perangkat IoT yang kami buat, pertama tama kami akan membahas library yang kami gunakan yang ter lampir pada foto 4 sebagai berikut
+Berikut kode dari sisi node dan mengirimkannya ke gateway
+```
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+#include <DHT.h>  // Lib untuk DHT sensor
+
+#define DHTPIN D2     // Pin data DHT11 terhubung ke pin D2
+#define DHTTYPE DHT11 // Tipe sensor DHT
+
+DHT dht(DHTPIN, DHTTYPE);
+
+// REPLACE WITH RECEIVER MAC Address
+uint8_t broadcastAddress[] = {0x24, 0xD7, 0xEB, 0xC9, 0x23, 0x45};
+
+// Structure example to send data
+typedef struct struct_message {
+  float temperature;
+  float humidity;
+  int soilMoisture;  // Data dari soil moisture sensor
+} struct_message;
+
+struct_message myData;
+
+unsigned long lastTime = 0;
+unsigned long timerDelay = 5000; // send readings timer
+
+// Pin untuk soil moisture sensor
+const int soilMoisturePin = A0;  // Hubungkan sensor ke pin analog A0
+
+void OnDataSent(uint8_t *mac_addr, uint8_t sendStatus) {
+  Serial.print("Last Packet Send Status: ");
+  if (sendStatus == 0) {
+    Serial.println("Delivery success");
+  } else {
+    Serial.println("Delivery fail");
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  dht.begin(); // Inisialisasi sensor DHT11
+  
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != 0) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
+  esp_now_register_send_cb(OnDataSent);
+  esp_now_add_peer(broadcastAddress, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+}
+
+void loop() {
+  if ((millis() - lastTime) > timerDelay) {
+
+    // Baca data dari sensor DHT11
+    float humidity = dht.readHumidity();
+    float temperature = dht.readTemperature(); // dalam derajat Celcius
+
+    // Baca data dari soil moisture sensor
+    int soilMoistureValue = analogRead(soilMoisturePin);
+
+    if (isnan(humidity) || isnan(temperature)) {
+      Serial.println("Gagal membaca dari sensor DHT11!");
+      return;
+    }
+
+    myData.temperature = temperature;
+    myData.humidity = humidity;
+    myData.soilMoisture = soilMoistureValue;  // Set data soil moisture
+
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.print("°C | Humidity: ");
+    Serial.print(humidity);
+    Serial.print("% | Soil Moisture: ");
+    Serial.println(soilMoistureValue);  // Tampilkan nilai soil moisture
+
+    // Kirim data melalui ESP-NOW
+    esp_now_send(broadcastAddress, (uint8_t *)&myData, sizeof(myData));
+
+    lastTime = millis();
+  }
+}
+```
+
+Dan kode dibawah ini kode dari sisi gateway
 ```
 #include <Arduino.h>
+#include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <DHT.h>    
-#include <Adafruit_Sensor.h>
-#include <RunningMedian.h>  // Library untuk smoothing nilai analog
+#include <espnow.h>
 
-// WiFi
-const char *ssid = "bian"; // Ganti dengan nama WiFi Anda
-const char *password = "12345678";  // Ganti dengan kata sandi WiFi Anda
+const char *ssid = "RUMAH";         // Enter your WiFi name
+const char *password = "langsungmasukaja"; // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
-const char *topic = "testtopic/tubes";
-const char *topic2 = "testtopic/moisture";
-const char *topic3 = "testtopic/pumpindex";
+const char *topic_mqtt = "testtopic/moisture";
 const char *mqtt_username = "mqtt";
 const char *mqtt_password = "123";
 const int mqtt_port = 1883;
-```
+// Structure untuk ESP-NOW
 
-Kemudian kami juga menambahkan kode untuk koneksi ke wifi dan MQTT Broker, ketika device berusaha konek ke wifi kami akan menampilkan "Connecting to wifi.." pada terminal, dan "Connected to the wifi network" jika berhasil konek, sesaat setelah konek ke wifi kami akan langsung mengkonekan device ke mqtt broker dan melakukan delay(2000) ketika gagal melakukan koneksi ke mqttbroker.
-```
+int jarak;
+int status;
+
+typedef struct struct_message {
+  float temperature;
+  float humidity;
+  int soilMoisture;
+} struct_message;
+
+struct_message myData;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+char str[80];
+
+void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len) {
+  memcpy(&myData, incomingData, sizeof(myData));
+
+  // Menerbitkan data ke MQTT broker setelah menerima data dari ESP-NOW
+  char message[50];
+  snprintf(message, sizeof(message), "Temperature: %.2f°C | Humidity: %.2f%% | Soil Moisture: %d", 
+           myData.temperature, myData.humidity, myData.soilMoisture);
+  client.publish(topic_mqtt, message);
+
+  Serial.println("Data diterima dan diterbitkan ke MQTT.");
+}
+
+void callback(char *topic, byte *payload, unsigned int length)
+{
+
+  Serial.print("Pesan baru dari topik: ");
+  Serial.println(topic);
+
+  if (strcmp(topic, "kelasiotesp/PENYOLDER/distance: ") == 0)
+  {
+    payload[length] = '\0';        // Tambahkan null terminator untuk mengonversi ke string
+    jarak = atoi((char *)payload); // Konversi string menjadi integer
+    Serial.print("Jarak: ");
+    Serial.println(jarak);
+  }
+
+  if (strcmp(topic, "kelasiotesp/PENYOLDER/interrupt:") == 0)
+  {
+    payload[length] = '\0';        // Tambahkan null terminator untuk mengonversi ke string
+    status = atoi((char *)payload); // Konversi string menjadi integer
+    Serial.print("Status: ");
+    Serial.println(status);
+  }
+}
+
+
 void setup() {
- Serial.begin(115200);
+  Serial.begin(115200);
 
- // Inisialisasi pin relay
- pinMode(relayPin, OUTPUT);
- digitalWrite(relayPin, LOW);  // Inisialisasi relay dalam keadaan mati
+  // Connecting to a WiFi network
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+  Serial.println("Connected to the WiFi network");
 
- WiFi.begin(ssid, password);
- while (WiFi.status() != WL_CONNECTED) {
-     delay(500);
-     Serial.println("Connecting to WiFi..");
- }
- Serial.println("Connected to the WiFi network");
+  // Connecting to an MQTT broker
+  client.setServer(mqtt_broker, mqtt_port);
+  client.setCallback(callback);
 
- client.setServer(mqtt_broker, mqtt_port);
- client.setCallback(callback);
- while (!client.connected()) {
-     String client_id = "esp32-client-";
-     client_id += String(WiFi.macAddress());
-     Serial.printf("The client %s connects to the public mqtt broker\n", client_id.c_str());
-     if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
-         Serial.println("Public emqx mqtt broker connected");
-     } else {
-         Serial.print("failed with state ");
-         Serial.print(client.state());
-         delay(2000);
-     }
- }
- dht.begin();   
- client.publish(topic, "Hi EMQX I'm esp ^^");
- client.subscribe(topic);
+  while (!client.connected())
+  {
+    String client_id = "esp32-client-";
+    client_id += String(WiFi.macAddress());
+    Serial.printf("The client %s connects to the public mqtt broker\n", client_id.c_str());
+    if (client.connect(client_id.c_str(), mqtt_username, mqtt_password))
+    {
+      Serial.println("Public emqx mqtt broker connected");
+    }
+    else
+    {
+      Serial.print("failed with state ");
+      Serial.print(client.state());
+      delay(2000);
+    }
+  }
+
+  client.subscribe("kelasiotesp/PENYOLDER/distance: ");
+  client.subscribe("kelasiotesp/PENYOLDER/interrupt:");
+  // ... (Kode Anda yang lain seperti koneksi WiFi dan MQTT tetap sama)
+
+  // Inisialisasi ESP-NOW
+  if (esp_now_init() != 0) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Setelah berhasil inisialisasi ESP-NOW, kita akan mendaftar untuk menerima callback
+  esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+  esp_now_register_recv_cb(OnDataRecv);
 }
-```
-Gambar selanjutnya dibawah ini adalah fungsi utama dari kode yang bertujuan untuk mengukur data dari sensor, menampilkan nilai-nilai tersebut, serta mengirimkan data tersebut ke platform Node-red melalui MQTT Broker. Selain itu, kode ini dirancang untuk menangani berbagai pengecualian yang mungkin terjadi selama proses pengiriman, memastikan integritas dan kehandalan operasi
-```
+
 void loop() {
- client.loop();
-
- int soilMoistureValue = analogRead(soilMoisturePin);
- soilMoistureValues.add(soilMoistureValue);
- float smoothedMoisture = soilMoistureValues.getMedian();
-
- Serial.println("Soil Moisture: " + String(smoothedMoisture));
- sprintf(str, "%.2f", smoothedMoisture);
- client.publish(topic2, str);
-
- // Kontrol Relay berdasarkan Kelembaban Tanah
- const int moistureThreshold = 940;  // Ganti dengan ambang batas yang sesuai
- if (smoothedMoisture < moistureThreshold) {
-   digitalWrite(relayPin, HIGH);  // Aktifkan relay untuk menyalakan mini pump
-   Serial.println("Mini Pump is OFF");
-   client.publish(topic3, "Mini Pump is OFF");
- } else {
-   digitalWrite(relayPin, LOW);  // Matikan relay
-   Serial.println("Mini Pump is ON");
-   client.publish(topic3, "Mini Pump is ON");
- }
-
-  // Task scheduler untuk menyalakan pompa setiap jam 7 pagi selama 2 menit
-  unsigned long currentMillis = millis();
-  if (lastPumpStartTime == 0) {
-    lastPumpStartTime = currentMillis;  // Inisialisasi waktu pertama kali
-  }
-
-  // Hitung jam dalam millis (1 jam = 3600000 millis)
-  if ((currentMillis - lastPumpStartTime >= 7 * 3600000) && (currentMillis - lastPumpStartTime < 7 * 3600000 + 120000)) {
-    // Jika waktu saat ini adalah jam 7 pagi dan belum lewat 2 menit
-    digitalWrite(relayPin, HIGH);  // Nyalakan pompa
-  } else {
-    // Jika bukan jam 7 pagi, atau sudah lewat 2 menit
-    digitalWrite(relayPin, LOW);  // Matikan pompa
-    lastPumpStartTime = 0;  // Reset waktu untuk siklus berikutnya
-  }
-
- delay(2000);
+  client.loop();
+  // Dalam loop(), Anda bisa menambahkan kode lain jika diperlukan
 }
-```
 
+```
 
 # Transmisi Data / Konektivitas
 I decided to send data once every 15 minutes since the purpose of this project is to know when i need to water my plant and since the moisture in the soil does not change that fast then 15 seemed like a good time beetween each measuring. 
