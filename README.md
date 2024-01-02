@@ -282,6 +282,7 @@ Berikut merupakan tampilan dari node-red flow dan juga struktur database yang ka
 
 nodered
 ![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/nodered.jpg?raw=true)
+
 firebaseDB
 ![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/firebasedb.jpg?raw=true)
 
