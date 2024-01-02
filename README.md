@@ -67,21 +67,19 @@ Berikut kode dari sisi node dan mengirimkannya ke gateway
 ```
 #include <ESP8266WiFi.h>
 #include <espnow.h>
-#include <DHT.h>  // Lib untuk DHT sensor
+#include <DHT.h>
 
-#define DHTPIN D2     // Pin data DHT11 terhubung ke pin D2
-#define DHTTYPE DHT11 // Tipe sensor DHT
+#define DHTPIN D2
+#define DHTTYPE DHT11
 
 DHT dht(DHTPIN, DHTTYPE);
 
-// REPLACE WITH RECEIVER MAC Address
-uint8_t broadcastAddress[] = {0x24, 0xD7, 0xEB, 0xC9, 0x23, 0x45};
+uint8_t broadcastAddress[] = {0x8C, 0xAA, 0xB5, 0x7F, 0x21, 0x50};
 
-// Structure example to send data
 typedef struct struct_message {
   float temperature;
   float humidity;
-  int soilMoisture;  // Data dari soil moisture sensor
+  int soilMoisture;
 } struct_message;
 
 struct_message myData;
@@ -89,8 +87,10 @@ struct_message myData;
 unsigned long lastTime = 0;
 unsigned long timerDelay = 5000; // send readings timer
 
-// Pin untuk soil moisture sensor
-const int soilMoisturePin = A0;  // Hubungkan sensor ke pin analog A0
+const int soilMoisturePin = A0;
+
+// Pin untuk relay
+const int relayPin = D5;  // Ganti dengan pin yang sesuai
 
 void OnDataSent(uint8_t *mac_addr, uint8_t sendStatus) {
   Serial.print("Last Packet Send Status: ");
@@ -104,8 +104,10 @@ void OnDataSent(uint8_t *mac_addr, uint8_t sendStatus) {
 void setup() {
   Serial.begin(115200);
   
-  dht.begin(); // Inisialisasi sensor DHT11
+  dht.begin();
   
+  pinMode(relayPin, OUTPUT);  // Inisialisasi pin relay
+
   WiFi.mode(WIFI_STA);
 
   if (esp_now_init() != 0) {
@@ -120,12 +122,8 @@ void setup() {
 
 void loop() {
   if ((millis() - lastTime) > timerDelay) {
-
-    // Baca data dari sensor DHT11
     float humidity = dht.readHumidity();
-    float temperature = dht.readTemperature(); // dalam derajat Celcius
-
-    // Baca data dari soil moisture sensor
+    float temperature = dht.readTemperature();
     int soilMoistureValue = analogRead(soilMoisturePin);
 
     if (isnan(humidity) || isnan(temperature)) {
@@ -135,17 +133,26 @@ void loop() {
 
     myData.temperature = temperature;
     myData.humidity = humidity;
-    myData.soilMoisture = soilMoistureValue;  // Set data soil moisture
+    myData.soilMoisture = soilMoistureValue;
 
     Serial.print("Temperature: ");
     Serial.print(temperature);
     Serial.print("°C | Humidity: ");
     Serial.print(humidity);
     Serial.print("% | Soil Moisture: ");
-    Serial.println(soilMoistureValue);  // Tampilkan nilai soil moisture
+    Serial.println(soilMoistureValue);
 
     // Kirim data melalui ESP-NOW
     esp_now_send(broadcastAddress, (uint8_t *)&myData, sizeof(myData));
+
+    // Aktivasi relay berdasarkan kondisi kelembaban tanah
+    if (soilMoistureValue < 700) {
+      digitalWrite(relayPin, HIGH);  // Aktifkan relay
+      Serial.println("Mini Pump OFF"); 
+    } else {
+      digitalWrite(relayPin, LOW);  // Nonaktifkan relay
+      Serial.println("Mini Pump ON");
+    }
 
     lastTime = millis();
   }
@@ -160,12 +167,16 @@ Dan kode dibawah ini kode dari sisi gateway
 #include <PubSubClient.h>
 #include <espnow.h>
 
-const char *ssid = "RUMAH";         // Enter your WiFi name
-const char *password = "langsungmasukaja"; // Enter WiFi password
+// ... (Kode Anda yang lain seperti definisi konstanta, variabel, dan fungsi callback tetap sama)
+const char *ssid = "bian";         // Enter your WiFi name
+const char *password = "12345678"; // Enter WiFi password
 
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
-const char *topic_mqtt = "testtopic/moisture";
+const char *topic_mqtt1 = "testtopic/moisture";
+const char *topic_mqtt2 = "testtopic/pumpindex";
+const char *topic_mqtt3 = "testtopic/humidity";
+const char *topic_mqtt4 = "testtopic/temperature";
 const char *mqtt_username = "mqtt";
 const char *mqtt_password = "123";
 const int mqtt_port = 1883;
@@ -186,18 +197,28 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 char str[80];
 
+// ... (Kode Anda yang lain seperti setup() dan callback() tetap sama)
+
 void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len) {
   memcpy(&myData, incomingData, sizeof(myData));
 
-  // Menerbitkan data ke MQTT broker setelah menerima data dari ESP-NOW
-  char message[50];
-  snprintf(message, sizeof(message), "Temperature: %.2f°C | Humidity: %.2f%% | Soil Moisture: %d", 
-           myData.temperature, myData.humidity, myData.soilMoisture);
-  client.publish(topic_mqtt, message);
+  // Mengirim data temperature ke MQTT pada topic_mqtt2
+  char messageTemp[10];
+  snprintf(messageTemp, sizeof(messageTemp), "%.2f", myData.temperature); // Hanya mengambil data temperature
+  client.publish(topic_mqtt4, messageTemp); // Mengirim ke topic_mqtt2
+
+  // Mengirim data humidity ke MQTT pada topic_mqtt3
+  char messageHumidity[10];
+  snprintf(messageHumidity, sizeof(messageHumidity), "%.2f", myData.humidity); // Hanya mengambil data humidity
+  client.publish(topic_mqtt3, messageHumidity); // Mengirim ke topic_mqtt3
+
+  // Mengirim data soilMoisture ke MQTT pada topic_mqtt4
+  char messageSoilMoisture[10];
+  snprintf(messageSoilMoisture, sizeof(messageSoilMoisture), "%d", myData.soilMoisture); // Mengambil data soilMoisture sebagai integer
+  client.publish(topic_mqtt1, messageSoilMoisture); // Mengirim ke topic_mqtt4
 
   Serial.println("Data diterima dan diterbitkan ke MQTT.");
 }
-
 void callback(char *topic, byte *payload, unsigned int length)
 {
 
@@ -274,7 +295,6 @@ void loop() {
   client.loop();
   // Dalam loop(), Anda bisa menambahkan kode lain jika diperlukan
 }
-
 ```
 
 # Transmisi Data / Konektivitas
