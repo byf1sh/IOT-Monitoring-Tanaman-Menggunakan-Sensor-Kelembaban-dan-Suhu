@@ -281,10 +281,10 @@ void loop() {
 Berikut merupakan tampilan dari node-red flow dan juga struktur database yang kami gunaka pada projek kali ini
 
 nodered
-![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/nodered.jpg?raw=true)
+![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/nodenew.jpg?raw=true)
 
 firebaseDB
-![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/firebasedb.jpg?raw=true)
+![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/firebasenew.jpg?raw=true)
 
 # Menyajikan Data
 Dasbor pada platform Nodered dikonfigurasi dengan memanfaatkan tiga aliran data (feeds) yang masing-masing mengkategorikan kelembapan udara, kelembapan tanah, dan suhu. Setiap dari ketiga aliran data ini dilengkapi dengan satu diagram yang merepresentasikan perubahan nilai dari masing-masing sensor.
