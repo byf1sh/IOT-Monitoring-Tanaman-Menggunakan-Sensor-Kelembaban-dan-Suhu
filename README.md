@@ -297,7 +297,7 @@ void loop() {
 }
 ```
 
-# Transmisi Data / Konektivitas
+# Node-red dan Database
 Berikut merupakan tampilan dari node-red flow dan juga struktur database yang kami gunaka pada projek kali ini
 
 nodered
