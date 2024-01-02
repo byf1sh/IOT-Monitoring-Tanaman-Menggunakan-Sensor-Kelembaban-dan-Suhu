@@ -290,7 +290,7 @@ firebaseDB
 Dasbor pada platform Nodered dikonfigurasi dengan memanfaatkan tiga aliran data (feeds) yang masing-masing mengkategorikan kelembapan udara, kelembapan tanah, dan suhu. Setiap dari ketiga aliran data ini dilengkapi dengan satu diagram yang merepresentasikan perubahan nilai dari masing-masing sensor.
 
 Untuk air level dan suhu, pilihan jatuh pada penggunaan sebuah meteran (gauge) yang menampilkan persentase kelembapan pada saat pengukuran terakhir. Sementara itu, untuk tingkat kebasahan, sebuah bidang teks digunakan untuk menunjukkan nilai suhu saat pengukuran terakhir
-![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Dashboard.jpg?raw=true)
+![Screenshot 2022-07-03 191415](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/dashboardnew.jpg?raw=true)
 
 
 
