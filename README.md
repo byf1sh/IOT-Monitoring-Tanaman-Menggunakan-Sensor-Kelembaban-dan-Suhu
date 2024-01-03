@@ -331,4 +331,4 @@ Setelah merakit komponen ini hasil yang bisa kami tampilkan.
 
 Saya berpendapat bahwa hasil dari proyek ini memenuhi ekspektasi saya, mengingat bahwa saya berhasil mencapai tujuan yang telah saya tetapkan. Dengan pengalaman sebelumnya dalam pemrograman, saya mengamati bahwa aspek pemrograman dalam proyek ini relatif tidak menantang. Namun, tantangan muncul saat mengkalibrasi sensor kelembapan tanah berbasis kapasitif untuk mengukur data dengan akurasi yang memadai. Proses ini memerlukan pencarian informasi melalui berbagai sumber dan referensi. Selain itu, saya mengapresiasi kualitas instruksi dari dosen IOT yang membimbing saya, yang memberikan informasi yang informatif dan mendukung, sehingga memudahkan jalannya proyek tanpa hambatan signifikan
 
-
+terimaksihasdasd
