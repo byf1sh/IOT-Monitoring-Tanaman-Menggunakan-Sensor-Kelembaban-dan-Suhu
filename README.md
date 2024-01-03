@@ -316,13 +316,16 @@ Untuk air level dan suhu, pilihan jatuh pada penggunaan sebuah meteran (gauge) y
 
 # Menyelesaikan Desain
 Setelah merakit komponen ini hasil yang bisa kami tampilkan.
-![20220704_204437](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%201.jpg?raw=true)
+![20220704_204437](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/jpg/WhatsApp%20Image%202024-01-03%20at%2011.02.40.jpeg?raw=true)
 
-![20220704_204443](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%202.jpg?raw=true)
+![20220704_204443](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/jpg/WhatsApp%20Image%202024-01-03%20at%2011.02.40%20(1).jpeg?raw=true)
 
-![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%203.jpg?raw=true)
+![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/jpg/WhatsApp%20Image%202024-01-03%20at%2011.02.40%20(2).jpeg?raw=true)
 
-![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/assets/Alat%204.jpg?raw=true)
+![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/jpg/WhatsApp%20Image%202024-01-03%20at%2011.02.41%20(1).jpeg?raw=true)
+
+![20220704_204429](https://github.com/byf1sh/IOT-Monitoring-Tanaman-Menggunakan-Sensor-Kelembaban-dan-Suhu/blob/main/jpg/WhatsApp%20Image%202024-01-03%20at%2011.02.41.jpeg?raw=true)
+
 
 **Kata Penutup**
 
